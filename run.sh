@@ -7,7 +7,6 @@ usage () {
   Options:
   -h|help       Display this message
   -d|dir        Run all sample codes in the specified directory"
-
 }
 
 while getopts "hd:" opt
