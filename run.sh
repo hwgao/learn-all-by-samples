@@ -1,5 +1,29 @@
 #!/bin/bash
 
+usage () {
+  echo "Usage :  $0 [options] [--] [Program Arguments]
+
+
+  Options:
+  -h|help       Display this message
+  -d|dir        Run all sample codes in the specified directory"
+
+}
+
+while getopts "hd:" opt
+do
+  case $opt in
+    d|dir)
+      test -d "$OPTARG" && cd "$OPTARG"
+      ;;
+    *)
+      usage
+      exit 0
+      ;;
+  esac
+done
+shift $(($OPTIND-1))
+
 # c
 if [[ -f sample.c ]]; then
   tput setaf 1
