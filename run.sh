@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 export GOPATH="$(dirname $(realpath $0))/go"
 INPUT="${PWD}"
