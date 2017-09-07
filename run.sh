@@ -1,4 +1,16 @@
 #!/bin/bash
+set -x
+
+export GOPATH="$(dirname $(realpath $0))/go"
+INPUT="${PWD}"
+
+declare -A languages=(
+    [c]='gcc --std=c11 -Wall -Wextra ${INPUT} -o ${OUTPUT}'
+    [cpp]='g++ --std=c++11 -Wall -Wextra ${INPUT} -o ${OUTPUT}'
+    [go]='go build -o ${OUTPUT} ${INPUT}'
+    [py]='python ${INPUT}'
+    [js]='node ${INPUT}'
+)
 
 usage () {
   echo "Usage :  $0 [options] [--] [Program Arguments]
@@ -6,14 +18,23 @@ usage () {
 
   Options:
   -h|help       Display this message
-  -d|dir        Run all sample codes in the specified directory"
+  -s|source     File or directory to run"
 }
 
-while getopts "hd:" opt
+run_output() {
+    if [[ -e "$OUTPUT" ]]; then
+        tput setaf 1
+        ./"$OUTPUT" "$@"
+        rm "$OUTPUT"
+        tput sgr0
+    fi
+}
+
+while getopts "s:" opt
 do
   case $opt in
-    d|dir)
-      test -d "$OPTARG" && cd "$OPTARG"
+    s|source)
+      INPUT="$OPTARG"
       ;;
     *)
       usage
@@ -23,56 +44,25 @@ do
 done
 shift $(($OPTIND-1))
 
-run_in_folder() {
-    local TYPE=$1
-    shift 1
-    if [[ -d "$TYPE" ]]; then
-        cd "$TYPE"
-        if [[ -f CMakeLists.txt ]]; then
-            mkdir build && cd build && cmake .. && make
-            tput setaf 1
-            echo "--- Run $TYPE code: ./$TYPE.out $@ ---"
-            ./$TYPE.out "$@"
-            cd .. && rm -rf build
-        elif [[ -f makefile || -f Makefile ]]; then
-            make
-            tput setaf 1
-            echo "--- Run $TYPE code: ./$TYPE.out $@ ---"
-            ./$TYPE.out "$@"
+if [[ -f "$INPUT" ]]; then
+    cd "$(dirname $INPUT)"
+    INPUT="$(basename $INPUT)"
+    OUTPUT="${INPUT%.*}"
+    eval ${languages[${INPUT##*.}]}
+elif [[ -d "$INPUT" ]]; then
+    cd "$INPUT"
+    INPUT="$(basename $INPUT)"
+    OUTPUT="${INPUT%.*}"
+    if [[ -f CMakeLists.txt ]]; then
+        mkdir build && cd build && cmake .. && make
+    elif [[ -f makefile || -f Makefile ]]; then
+        make
+    else
+        count=$(ls -1 *.go 2>/dev/null | wc -l)
+        if [[ $count != 0  ]]; then
+            go build
         fi
     fi
-}
-
-# c
-if [[ -f sample.c ]]; then
-    tput setaf 1
-    gcc --std=c11 -Wall -Wextra sample.c -o c.out
-    echo "--- Run C code: ./c.out $@ ---"
-    ./c.out "$@"
-    rm ./c.out
 fi
 
-(run_in_folder c)
-
-# c++
-if [[ -f sample.cpp ]]; then
-    tput setaf 2
-    g++ --std=c++11 -Wall -Wextra sample.cpp -o cpp.out
-    echo "--- Run C++ code: ./cpp.out $@ ---"
-    ./cpp.out "$@"
-    rm ./cpp.out
-fi
-
-(run_in_folder cpp)
-
-# go
-if [[ -f sample.go ]]; then
-    tput setaf 3
-    go build -o go.out sample.go
-    echo "--- Run Go code: ./go.out $@  ---"
-    ./go.out "$@"
-    rm ./go.out
-fi
-
-# Clear color
-tput sgr0
+run_output "$@"
