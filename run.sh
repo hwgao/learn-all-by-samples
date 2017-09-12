@@ -12,12 +12,7 @@ declare -A languages=(
 )
 
 usage () {
-  echo "Usage :  $0 [options] [--] [Program Arguments]
-
-
-  Options:
-  -h|help       Display this message
-  -s|source     File or directory to run"
+  echo "Usage :  $0 File|Directory"
 }
 
 run_output() {
@@ -29,19 +24,13 @@ run_output() {
     fi
 }
 
-while getopts "s:" opt
-do
-  case $opt in
-    s|source)
-      INPUT="$OPTARG"
-      ;;
-    *)
-      usage
-      exit 0
-      ;;
-  esac
-done
-shift $(($OPTIND-1))
+if [ $# -ge 1 ]; then
+    INPUT="$1"
+else
+    usage
+    exit 0
+fi
+shift
 
 if [[ -f "$INPUT" ]]; then
     cd "$(dirname $INPUT)"
